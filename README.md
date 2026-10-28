@@ -38,3 +38,49 @@ pytest tests/
 # 5. 启动交互式 Web 界面与知识图谱可视化看板
 python -m streamlit run app.py
 ```
+
+## 6. 示例数据和测试任务说明
+- **测试场景**：电信客户流失预测（`SC_CHURN`），属于二分类表格任务。
+- **特征构成**：数值特征（在网时长 `tenure`、月消费 `monthly_charges`、总消费 `total_charges`、投诉次数 `support_calls`）与类别特征（合同类型 `contract_type`、支付方式 `payment_method`）。
+- **沙箱注入的工程挑战**：
+  1. **数据缺陷**：随机注入 5% 缺失值（`NaN`），且正负样本严重失衡（约 1:3）。
+  2. **非线性依赖**：通过逻辑斯蒂隐函数构造了复杂的交叉特征组合逻辑。
+  3. **线上边界压力测试**：在沙箱测试集（`X_test_stress`）中故意篡改了一条数据的支付方式为 `Crypto_New_Unseen`（训练集中未曾出现的新类别），以此检验生成代码的线上鲁棒性。
+
+## 7. 生成算法代码示例
+生成的完整代码输出在 `artifacts/generated_pipeline_v1.py` 中。生成的代码强制实现 `GeneratedCapability` 类契约，其核心亮点包括：
+- **特征防崩**：在自定义特征构造前，利用 `.fillna(1.0).clip(lower=1.0)` 进行数学分母安全兜底。
+- **数据防穿越**：严格封装 `ColumnTransformer` 和 `Pipeline`，区分 `fit_transform` 与 `transform`。
+- **动态阈值寻优**：基于训练概率输出 `predict_proba` 遍历搜索，自动将 F1-Score 从 0.5 默认切分的低谷拉升至达标线以上。
+
+```python
+# 核心片段节选：自修复后的编码器与分类器组合
+cat_pipe = Pipeline([
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    # 此处 handle_unknown='ignore' 为 Agent 第二轮自动吸收教训后注入的修正
+    ("ohe", OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+])
+# 选型采用了图谱规划的 GBDT 模型应对非线性特征
+self.model = HistGradientBoostingClassifier(
+    max_iter=100, max_depth=4, learning_rate=0.05, class_weight='balanced'
+)
+```
+## 8. 验证结果和报告样例
+运行后会自动生成 `artifacts/verification_report.md`。沙箱对 Beam Search 规划出的两条候选链路进行了真实数据的赛马对比：
+- **方案 #1 (GBDT)**：结合了 `ChurnVelocityAndRiskScore` 特征，ROC-AUC 达 0.86+，F1 达 0.68+，耗时 ~650ms。
+- **方案 #2 (Random Forest)**：同样的特征工程，但由于随机森林在当前非线性组合下 Precision 较低，导致 F1 指标落后，且运行耗时超过 1.3 秒。
+系统最终自动采纳 **方案 #1**，并将其指标与新的版本号（如 `v1.0.2`）更新至图谱节点。
+
+## 9. 遇到的挑战和解决方案
+1. **挑战：生成代码的安全性与接口一致性问题**
+   - **解决方案**：引入 `ASTSecurityAndContractChecker`。在执行 `exec()` 前，通过抽象语法树（AST）静态拦截 `os`/`subprocess` 等危险系统调用，并强制校验生成的类是否包含 `fit`/`predict` 等标准契约方法。
+2. **挑战：LLM 容易重复犯错，无长期记忆**
+   - **解决方案**：设计了**“沙箱拦截 → Reflector 归因 → 知识图谱沉淀”**的免疫机制。测试集抛出未见类别异常时，系统提取防呆规则并存为 `FailureCase` 图谱节点。下次规划同类算子时，该节点作为前置 Prompt 被检索注入，实现 Agent 的“吃一堑长一智”。
+3. **挑战：单次生成的局部最优困境**
+   - **解决方案**：放弃单纯的单次 Prompt 问答，引入基于图谱的 **Beam Search (束搜索)**。结合算子的“单体历史得分”与图谱边的“协同默契度 (synergy)”，并行规划出 Top-K 条候选链路放入沙箱进行末位淘汰。
+
+## 10. 后续可扩展方向
+1. **多级沙箱与容器化隔离**：将目前的 AST + 本地 `subprocess` 评估模式，升级为基于 Docker 或 Firecracker 微虚拟机的全隔离物理沙箱，支持更复杂的系统级库安装。
+2. **MCTS 与演化搜索接入**：在流水线规划层，用蒙特卡洛树搜索（MCTS）替代 Beam Search，用于更大规模的超参数拓扑空间寻优。
+3. **企业代码库资产挖掘冷启动**：利用 AST 批量解析企业内部历史 Git 仓库，自动抽取常用特征工程函数，全自动构建知识图谱冷启动数据。
+4. **多模态与跨场景泛化**：当前图谱 Schema 天然支持横向扩展。未来只需往 `Scenario` 节点注入 NLP/CV 场景约束，即可零代码改动平滑迁移至文本分类或图像检测任务。
