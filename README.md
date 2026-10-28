@@ -34,4 +34,7 @@ python main.py
 
 # 4. 运行单元测试
 pytest tests/
+
+# 5. 启动交互式 Web 界面与知识图谱可视化看板
+python -m streamlit run app.py
 ```
