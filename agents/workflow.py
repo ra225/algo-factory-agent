@@ -1,4 +1,5 @@
 import os
+import textwrap
 from typing import Dict, Any, List
 from kg.graph_store import CapabilityKnowledgeGraph
 from sandbox.evaluator import VerificationSandbox
@@ -75,81 +76,83 @@ class MultiAgentAlgoFactory:
 
         handle_unknown_str = "'error'" if (attempt == 1 and not last_error) else "'ignore'"
         estimator_code = (
-            "HistGradientBoostingClassifier(max_iter=150, learning_rate=0.06, class_weight='balanced', random_state=42)"
+            "HistGradientBoostingClassifier(max_iter=100, max_depth=4, learning_rate=0.05, class_weight='balanced', random_state=42)"
             if use_gbdt else
-            "RandomForestClassifier(n_estimators=150, max_depth=8, class_weight='balanced', random_state=42)"
+            "RandomForestClassifier(n_estimators=120, max_depth=6, class_weight='balanced', random_state=42)"
         )
 
-        return f'''import numpy as np
-import pandas as pd
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
-from sklearn.metrics import f1_score
+        raw_code = f"""\
+        import numpy as np
+        import pandas as pd
+        from sklearn.impute import SimpleImputer
+        from sklearn.preprocessing import OneHotEncoder, StandardScaler
+        from sklearn.compose import ColumnTransformer
+        from sklearn.pipeline import Pipeline
+        from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
+        from sklearn.metrics import f1_score
 
 
-class GeneratedCapability:
-    """
-    自动复刻算法能力组件
-    选定方案节点: {[n["id"] for n in plan["nodes"]]}
-    修复轮次: Attempt #{attempt}
-    """
+        class GeneratedCapability:
+            \"\"\"
+            自动复刻算法能力组件
+            选定方案节点: {[n["id"] for n in plan["nodes"]]}
+            修复轮次: Attempt #{attempt}
+            \"\"\"
 
-    def __init__(self):
-        self.num_cols = ["tenure", "monthly_charges", "total_charges", "support_calls",
-                         "charge_velocity", "support_density"]
-        self.cat_cols = ["contract_type", "payment_method"]
-        self.preprocessor = None
-        self.model = None
-        self.best_threshold = 0.5
+            def __init__(self):
+                self.num_cols = ["tenure", "monthly_charges", "total_charges", "support_calls",
+                                 "charge_velocity", "support_density"]
+                self.cat_cols = ["contract_type", "payment_method"]
+                self.preprocessor = None
+                self.model = None
+                self.best_threshold = 0.5
 
-    def _engineer_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        X = df.copy()
-        tenure_safe = X["tenure"].fillna(1.0).clip(lower=1.0)
-        monthly_safe = X["monthly_charges"].fillna(50.0)
-        total_safe = X["total_charges"].fillna(tenure_safe * monthly_safe)
-        X["charge_velocity"] = total_safe / (tenure_safe * monthly_safe + 1.0)
-        X["support_density"] = X["support_calls"].fillna(0.0) / tenure_safe
-        return X
+            def _engineer_features(self, df: pd.DataFrame) -> pd.DataFrame:
+                X = df.copy()
+                tenure_safe = X["tenure"].fillna(1.0).clip(lower=1.0)
+                monthly_safe = X["monthly_charges"].fillna(50.0)
+                total_safe = X["total_charges"].fillna(tenure_safe * monthly_safe)
+                X["charge_velocity"] = total_safe / (tenure_safe * monthly_safe + 1.0)
+                X["support_density"] = X["support_calls"].fillna(0.0) / tenure_safe
+                return X
 
-    def fit(self, X: pd.DataFrame, y: np.ndarray):
-        X_feat = self._engineer_features(X)
-        num_pipe = Pipeline([
-            ("imputer", SimpleImputer(strategy="median")),
-            ("scaler", StandardScaler())
-        ])
-        cat_pipe = Pipeline([
-            ("imputer", SimpleImputer(strategy="most_frequent")),
-            ("ohe", OneHotEncoder(handle_unknown={handle_unknown_str}, sparse_output=False))
-        ])
-        self.preprocessor = ColumnTransformer([
-            ("num", num_pipe, self.num_cols),
-            ("cat", cat_pipe, self.cat_cols)
-        ])
-        X_trans = self.preprocessor.fit_transform(X_feat)
-        self.model = {estimator_code}
-        self.model.fit(X_trans, y)
+            def fit(self, X: pd.DataFrame, y: np.ndarray):
+                X_feat = self._engineer_features(X)
+                num_pipe = Pipeline([
+                    ("imputer", SimpleImputer(strategy="median")),
+                    ("scaler", StandardScaler())
+                ])
+                cat_pipe = Pipeline([
+                    ("imputer", SimpleImputer(strategy="most_frequent")),
+                    ("ohe", OneHotEncoder(handle_unknown={handle_unknown_str}, sparse_output=False))
+                ])
+                self.preprocessor = ColumnTransformer([
+                    ("num", num_pipe, self.num_cols),
+                    ("cat", cat_pipe, self.cat_cols)
+                ])
+                X_trans = self.preprocessor.fit_transform(X_feat)
+                self.model = {estimator_code}
+                self.model.fit(X_trans, y)
 
-        train_probs = self.model.predict_proba(X_trans)[:, 1]
-        best_f1, best_th = 0.0, 0.5
-        for th in np.linspace(0.25, 0.75, 21):
-            score = f1_score(y, (train_probs >= th).astype(int), zero_division=0)
-            if score > best_f1:
-                best_f1, best_th = score, float(th)
-        self.best_threshold = best_th
-        return self
+                train_probs = self.model.predict_proba(X_trans)[:, 1]
+                best_f1, best_th = 0.0, 0.5
+                for th in np.linspace(0.30, 0.70, 17):
+                    score = f1_score(y, (train_probs >= th).astype(int), zero_division=0)
+                    if score > best_f1:
+                        best_f1, best_th = score, float(th)
+                self.best_threshold = best_th
+                return self
 
-    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
-        X_feat = self._engineer_features(X)
-        X_trans = self.preprocessor.transform(X_feat)
-        return self.model.predict_proba(X_trans)[:, 1]
+            def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+                X_feat = self._engineer_features(X)
+                X_trans = self.preprocessor.transform(X_feat)
+                return self.model.predict_proba(X_trans)[:, 1]
 
-    def predict(self, X: pd.DataFrame) -> np.ndarray:
-        probs = self.predict_proba(X)
-        return (probs >= self.best_threshold).astype(int)
-'''
+            def predict(self, X: pd.DataFrame) -> np.ndarray:
+                probs = self.predict_proba(X)
+                return (probs >= self.best_threshold).astype(int)
+        """
+        return textwrap.dedent(raw_code)
 
     def reflect_on_failure(self, error_msg: str) -> Dict[str, str]:
         """ReflectorAgent：分析失败原因并提炼可复用的知识图谱经验节点"""

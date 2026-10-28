@@ -65,19 +65,19 @@ def generate_synthetic_churn_dataset(n_samples: int = 1200, random_state: int = 
     rng = np.random.default_rng(random_state)
     tenure = rng.integers(1, 72, size=n_samples).astype(float)
     monthly_charges = rng.uniform(20.0, 120.0, size=n_samples)
-    total_charges = tenure * monthly_charges + rng.normal(0, 50, size=n_samples)
-    support_calls = rng.poisson(1.8, size=n_samples).astype(float)
+    total_charges = tenure * monthly_charges + rng.normal(0, 40, size=n_samples)
+    support_calls = rng.poisson(2.0, size=n_samples).astype(float)
     contract_type = rng.choice(["Month-to-month", "One year", "Two year"], size=n_samples, p=[0.55, 0.25, 0.20])
     payment_method = rng.choice(["Electronic check", "Mailed check", "Bank transfer", "Credit card"], size=n_samples)
 
     logit = (
-        -2.2
-        + 0.025 * (monthly_charges - 60)
-        - 0.035 * tenure
-        + 0.45 * support_calls
-        + np.where(contract_type == "Month-to-month", 1.25, -0.6)
-        + np.where(payment_method == "Electronic check", 0.5, 0.0)
-        + 0.015 * (monthly_charges / (tenure + 1.0)) * 10
+        -2.0
+        + 0.035 * (monthly_charges - 60)
+        - 0.055 * tenure
+        + 0.65 * support_calls
+        + np.where(contract_type == "Month-to-month", 1.6, -0.8)
+        + np.where(payment_method == "Electronic check", 0.7, -0.2)
+        + 0.25 * (support_calls / (tenure / 12.0 + 0.5))
     )
     prob = 1 / (1 + np.exp(-logit))
     churn = (rng.uniform(0, 1, size=n_samples) < prob).astype(int)
