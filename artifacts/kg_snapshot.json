@@ -133,7 +133,7 @@
     },
     {
       "label": "VerificationRecord",
-      "timestamp": "2026-10-29 04:39:51",
+      "timestamp": "2026-10-29 04:48:50",
       "plan": [
         "CAP_PREP_ROBUST",
         "CAP_FE_CHURN_VELOCITY",
@@ -145,22 +145,22 @@
         "f1": 0.6842,
         "precision": 0.6933,
         "recall": 0.6753,
-        "runtime_ms": 576.81,
-        "peak_memory_mb": 1.018
+        "runtime_ms": 854.41,
+        "peak_memory_mb": 1.023
       },
       "passed": true,
-      "id": "VER_91153"
+      "id": "VER_30140"
     },
     {
       "label": "FailureCase",
       "error_type": "UnseenCategoryValueError",
       "root_cause": "ValueError: Found unknown categories ['Crypto_New_Unseen'] in column 1 during transform",
       "mitigation_rule": "线上/测试集极易出现未见过的类别值，OneHotEncoder 必须显式指定 handle_unknown='ignore'。",
-      "id": "FAIL_91153"
+      "id": "FAIL_30140"
     },
     {
       "label": "VerificationRecord",
-      "timestamp": "2026-10-29 04:39:53",
+      "timestamp": "2026-10-29 04:48:53",
       "plan": [
         "CAP_PREP_ROBUST",
         "CAP_FE_CHURN_VELOCITY",
@@ -172,18 +172,18 @@
         "f1": 0.6424,
         "precision": 0.6023,
         "recall": 0.6883,
-        "runtime_ms": 957.65,
-        "peak_memory_mb": 0.406
+        "runtime_ms": 1675.67,
+        "peak_memory_mb": 0.418
       },
       "passed": true,
-      "id": "VER_93230"
+      "id": "VER_33553"
     },
     {
       "label": "FailureCase",
       "error_type": "UnseenCategoryValueError",
       "root_cause": "ValueError: Found unknown categories ['Crypto_New_Unseen'] in column 1 during transform",
       "mitigation_rule": "线上/测试集极易出现未见过的类别值，OneHotEncoder 必须显式指定 handle_unknown='ignore'。",
-      "id": "FAIL_93230"
+      "id": "FAIL_33553"
     }
   ],
   "links": [
@@ -234,25 +234,25 @@
     {
       "relation": "VERIFIED_BY",
       "source": "CAP_PREP_ROBUST",
-      "target": "VER_91153",
+      "target": "VER_30140",
       "key": 0
     },
     {
       "relation": "HAS_FAILURE_EXPERIENCE",
       "source": "CAP_PREP_ROBUST",
-      "target": "FAIL_91153",
+      "target": "FAIL_30140",
       "key": 0
     },
     {
       "relation": "VERIFIED_BY",
       "source": "CAP_PREP_ROBUST",
-      "target": "VER_93230",
+      "target": "VER_33553",
       "key": 0
     },
     {
       "relation": "HAS_FAILURE_EXPERIENCE",
       "source": "CAP_PREP_ROBUST",
-      "target": "FAIL_93230",
+      "target": "FAIL_33553",
       "key": 0
     },
     {
@@ -291,13 +291,13 @@
     {
       "relation": "VERIFIED_BY",
       "source": "CAP_MODEL_RF",
-      "target": "VER_93230",
+      "target": "VER_33553",
       "key": 0
     },
     {
       "relation": "HAS_FAILURE_EXPERIENCE",
       "source": "CAP_MODEL_RF",
-      "target": "FAIL_93230",
+      "target": "FAIL_33553",
       "key": 0
     },
     {
@@ -316,13 +316,13 @@
     {
       "relation": "VERIFIED_BY",
       "source": "CAP_MODEL_GBDT",
-      "target": "VER_91153",
+      "target": "VER_30140",
       "key": 0
     },
     {
       "relation": "HAS_FAILURE_EXPERIENCE",
       "source": "CAP_MODEL_GBDT",
-      "target": "FAIL_91153",
+      "target": "FAIL_30140",
       "key": 0
     },
     {
@@ -334,25 +334,25 @@
     {
       "relation": "VERIFIED_BY",
       "source": "CAP_POST_THRESH",
-      "target": "VER_91153",
+      "target": "VER_30140",
       "key": 0
     },
     {
       "relation": "HAS_FAILURE_EXPERIENCE",
       "source": "CAP_POST_THRESH",
-      "target": "FAIL_91153",
+      "target": "FAIL_30140",
       "key": 0
     },
     {
       "relation": "VERIFIED_BY",
       "source": "CAP_POST_THRESH",
-      "target": "VER_93230",
+      "target": "VER_33553",
       "key": 0
     },
     {
       "relation": "HAS_FAILURE_EXPERIENCE",
       "source": "CAP_POST_THRESH",
-      "target": "FAIL_93230",
+      "target": "FAIL_33553",
       "key": 0
     },
     {
@@ -378,25 +378,25 @@
     {
       "relation": "VERIFIED_BY",
       "source": "CAP_FE_CHURN_VELOCITY",
-      "target": "VER_91153",
+      "target": "VER_30140",
       "key": 0
     },
     {
       "relation": "HAS_FAILURE_EXPERIENCE",
       "source": "CAP_FE_CHURN_VELOCITY",
-      "target": "FAIL_91153",
+      "target": "FAIL_30140",
       "key": 0
     },
     {
       "relation": "VERIFIED_BY",
       "source": "CAP_FE_CHURN_VELOCITY",
-      "target": "VER_93230",
+      "target": "VER_33553",
       "key": 0
     },
     {
       "relation": "HAS_FAILURE_EXPERIENCE",
       "source": "CAP_FE_CHURN_VELOCITY",
-      "target": "FAIL_93230",
+      "target": "FAIL_33553",
       "key": 0
     }
   ]

@@ -6,8 +6,8 @@
 ## 2. 多候选方案沙箱评测对比
 | 候选编号 | 算法能力组合链路 | ROC-AUC | F1-Score | Precision | Recall | 耗时 | 内存峰值 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 方案 #1 | RobustImputerEncoder → ChurnVelocityAndRiskScore → HistGradientBoosting → F1OptimalThresholdTuner | 0.8666 | 0.6842 | 0.6933 | 0.6753 | 576.81 ms | 1.018 MB |
-| 方案 #2 | RobustImputerEncoder → ChurnVelocityAndRiskScore → BalancedRandomForest → F1OptimalThresholdTuner | 0.8617 | 0.6424 | 0.6023 | 0.6883 | 957.65 ms | 0.406 MB |
+| 方案 #1 | RobustImputerEncoder → ChurnVelocityAndRiskScore → HistGradientBoosting → F1OptimalThresholdTuner | 0.8666 | 0.6842 | 0.6933 | 0.6753 | 854.41 ms | 1.023 MB |
+| 方案 #2 | RobustImputerEncoder → ChurnVelocityAndRiskScore → BalancedRandomForest → F1OptimalThresholdTuner | 0.8617 | 0.6424 | 0.6023 | 0.6883 | 1675.67 ms | 0.418 MB |
 
 ## 3. 自修复与失败案例沉淀记录
 - **触发异常阶段**: `RUNTIME_EXECUTION` (Attempt #1)
